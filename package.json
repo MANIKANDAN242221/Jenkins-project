@@ -1,5 +1,5 @@
 {
-  "name": "simple-node-static",
+  "name": "simple-node",
   "version": "1.0.0",
   "description": "Simple Node/Express app serving index.html",
   "main": "server.js",
