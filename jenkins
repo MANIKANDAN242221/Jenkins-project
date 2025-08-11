@@ -1,65 +1,108 @@
 pipeline {
-  agent any
+    agent none
 
-  environment {
-    IMAGE_NAME = "your-registry-or-local/simple-node-static"
-    IMAGE_TAG  = "latest"
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
+    environment {
+        AWS_ACCOUNT_ID     = '951042686423'
+        AWS_REGION         = 'ap-south-1'
+        REPO_NAME          = 'simple-node-static'
+        IMAGE_TAG          = 'latest'
+        ECR_REGISTRY       = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        IMAGE_URI          = "${ECR_REGISTRY}/${REPO_NAME}:${IMAGE_TAG}"
+        GIT_REPO           = 'https://github.com/MANIKANDAN242221/Jenkins-project.git'
+        AWS_CREDENTIALS_ID = 'aws-jenkins-creds'
     }
 
-    stage('Build Docker image') {
-      steps {
-        script {
-          sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+    stages {
+        stage('Clone Repository') {
+            agent { label 'master' }
+            steps {
+                cleanWs()
+                git url: "${GIT_REPO}", branch: 'main'
+                stash name: 'source_code'
+            }
         }
-      }
+
+        stage('Install Dependencies') {
+            agent { label 'master' }
+            steps {
+                unstash 'source_code'
+                sh '''
+                    echo "📦 Installing Node.js dependencies..."
+                    npm install
+                '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            agent { label 'master' }
+            steps {
+                sh '''
+                    echo "🗑️ Removing old Docker image..."
+                    docker rmi -f ${REPO_NAME}:latest || true
+
+                    echo "🐳 Building new Docker image..."
+                    docker build --no-cache -t ${REPO_NAME}:latest .
+                '''
+            }
+        }
+
+        stage('Tag Image for ECR') {
+            agent { label 'master' }
+            steps {
+                sh "docker tag ${REPO_NAME}:latest ${IMAGE_URI}"
+            }
+        }
+
+        stage('Login to ECR') {
+            agent { label 'master' }
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: "${AWS_CREDENTIALS_ID}",
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
+                    sh '''
+                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                        aws configure set default.region ${AWS_REGION}
+                        aws ecr get-login-password --region ${AWS_REGION} \
+                        | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                    '''
+                }
+            }
+        }
+
+        stage('Push Image to ECR') {
+            agent { label 'master' }
+            steps {
+                sh "docker push ${IMAGE_URI}"
+            }
+        }
+
+        stage('Deploy Container on Agent') {
+            agent { label 'agent' }
+            steps {
+                cleanWs()
+                unstash 'source_code'
+                sh '''
+                    docker-compose down || true
+                    docker-compose up -d
+                '''
+            }
+        }
     }
 
-    stage('Run tests (optional)') {
-      steps {
-        echo "No tests defined. Add your test step here."
-        // Example:
-        // sh "npm test"
-      }
+    post {
+        always {
+            echo '🧹 Cleaning up...'
+        }
+        success {
+            echo '✅ Pipeline executed successfully!'
+        }
+        failure {
+            echo '❌ Pipeline failed!'
+        }
     }
-
-    stage('Push image (optional)') {
-      when {
-        expression { return false } // change to true if you want to push
-      }
-      steps {
-        // Example for pushing to registry — configure credentials in Jenkins
-        // sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin registry.example.com"
-        // sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
-        echo "Push step is disabled by default. Enable and configure credentials to push."
-      }
-    }
-
-    stage('Deploy with docker-compose (optional)') {
-      steps {
-        echo "Bringing up containers with docker-compose (if desired)."
-        // If using docker-compose on agent:
-        // sh "docker-compose down || true"
-        // sh "docker-compose up -d"
-      }
-    }
-  }
-
-  post {
-    always {
-      echo 'Pipeline finished.'
-    }
-    success {
-      echo "Build succeeded: ${IMAGE_NAME}:${IMAGE_TAG}"
-    }
-    failure {
-      echo "Build failed."
-    }
-  }
 }
