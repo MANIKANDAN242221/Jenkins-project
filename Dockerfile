@@ -18,4 +18,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Start your app (make sure package.json start script points to "node public/server.js")
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
