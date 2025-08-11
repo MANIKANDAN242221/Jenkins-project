@@ -10,7 +10,7 @@ COPY package.json package-lock.json* ./
 # Install dependencies (production only)
 RUN npm install --production
 
-# Copy entire project into container
+# Copy entire project into container (including 'public' folder)
 COPY . .
 
 # Expose port your app listens on
