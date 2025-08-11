@@ -4,8 +4,8 @@
   "description": "Simple Node/Express app serving index.html",
   "main": "server.js",
   "scripts": {
-    "start": "node public/server.js",
-    "start:dev": "nodemon public/server.js"
+    "start": "node server.js",
+    "start:dev": "nodemon server.js"
   },
   "author": "Manikandan",
   "license": "MIT",
