@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Node App</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align:center; padding:40px; }
+    h1 { color: #2c3e50; }
+    .box { border:1px solid #ddd; display:inline-block; padding:20px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Hello from Node + Docker!</h1>
+    <p>This is a minimal example index.html served by Express.</p>
+    <p>Time on server: <span id="time">loading...</span></p>
+  </div>
+
+  <script>
+    async function loadTime() {
+      try {
+        const res = await fetch('/api/time');
+        const json = await res.json();
+        document.getElementById('time').innerText = new Date(json.time).toLocaleString();
+      } catch (e) {
+        document.getElementById('time').innerText = 'error';
+      }
+    }
+    loadTime();
+  </script>
+</body>
+</html>
