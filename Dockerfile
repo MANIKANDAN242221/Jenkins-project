@@ -7,17 +7,18 @@ WORKDIR /usr/src/app
 # Copy package files first (better caching)
 COPY package.json package-lock.json* ./
 
-# Install dependencies
+# Install dependencies (production only)
 RUN npm install --production
 
-# Copy app source
+# Copy app source (make sure server.js is here)
 COPY . .
 
-# Build-time variables (optional)
+# Set environment variables
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 ENV PORT=3000
 
+# Expose port
 EXPOSE 3000
 
 # Start the app
