@@ -1,28 +1,21 @@
 # Use official Node LTS image
 FROM node:20-alpine
 
-# Create app directory
+# Set working directory inside container
 WORKDIR /usr/src/app
 
-# Copy package files first (better caching)
+# Copy package files first (for caching npm install)
 COPY package.json package-lock.json* ./
 
 # Install dependencies (production only)
 RUN npm install --production
 
-# Copy app source, including the 'public' folder where server.js lives
-COPY public/ ./public
+# Copy entire project into container
+COPY . .
 
-# If you have other files/folders needed, copy them too, e.g.:
-# COPY other-folder/ ./other-folder
-
-# Set environment variables
-ARG NODE_ENV=production
-ENV NODE_ENV=${NODE_ENV}
+# Expose port your app listens on
 ENV PORT=3000
-
-# Expose port
 EXPOSE 3000
 
-# Start the app with the correct path to server.js
-CMD ["node", "public/server.js"]
+# Start your app (make sure package.json start script points to "node public/server.js")
+CMD ["npm", "start"]
