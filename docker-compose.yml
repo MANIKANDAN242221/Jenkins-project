@@ -5,8 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: simple-node-static:latest
-    container_name: simple-node-static
+    image: jenkins-project:latest
+    container_name: Jenkins
     ports:
       - "3000:3000"
     environment:
