@@ -10,8 +10,11 @@ COPY package.json package-lock.json* ./
 # Install dependencies (production only)
 RUN npm install --production
 
-# Copy app source (make sure server.js is here)
-COPY . .
+# Copy app source, including the 'public' folder where server.js lives
+COPY public/ ./public
+
+# If you have other files/folders needed, copy them too, e.g.:
+# COPY other-folder/ ./other-folder
 
 # Set environment variables
 ARG NODE_ENV=production
@@ -21,5 +24,5 @@ ENV PORT=3000
 # Expose port
 EXPOSE 3000
 
-# Start the app
-CMD ["npm", "start"]
+# Start the app with the correct path to server.js
+CMD ["node", "public/server.js"]
